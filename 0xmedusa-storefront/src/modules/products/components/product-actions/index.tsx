@@ -33,6 +33,7 @@ export default function ProductActions({
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string>>({})
   const [isAdding, setIsAdding] = useState(false)
+  const [isHuman, setIsHuman] = useState(false) // New state for human confirmation
 
   const countryCode = useParams().countryCode as string
 
@@ -110,7 +111,7 @@ export default function ProductActions({
 
   // add the selected variant to the cart
   const handleAddToCart = async () => {
-    if (!variant?.id) return null
+    if (!variant?.id || !isHuman) return null // Check if human
 
     setIsAdding(true)
 
@@ -121,6 +122,11 @@ export default function ProductActions({
     })
 
     setIsAdding(false)
+  }
+
+  // handle human confirmation
+  const handleHumanConfirmation = () => {
+    setIsHuman(true)
   }
 
   return (
@@ -149,8 +155,16 @@ export default function ProductActions({
         <ProductPrice product={product} variant={variant} region={region} />
 
         <Button
+          onClick={handleHumanConfirmation}
+          variant="primary"
+          className="w-full h-10"
+        >
+          I am a unique human
+        </Button>
+
+        <Button
           onClick={handleAddToCart}
-          disabled={!inStock || !variant}
+          disabled={!inStock || !variant || !isHuman} // Check if human
           variant="primary"
           className="w-full h-10"
           isLoading={isAdding}
