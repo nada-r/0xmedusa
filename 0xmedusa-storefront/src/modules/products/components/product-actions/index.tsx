@@ -14,6 +14,8 @@ import OptionSelect from "@modules/products/components/option-select"
 
 import MobileActions from "../mobile-actions"
 import ProductPrice from "../product-price"
+import { IDKitWidget, VerificationLevel } from '@worldcoin/idkit'
+import type { ISuccessResult } from "@worldcoin/idkit";
 
 type ProductActionsProps = {
   product: PricedProduct
@@ -33,7 +35,7 @@ export default function ProductActions({
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string>>({})
   const [isAdding, setIsAdding] = useState(false)
-  const [isHuman, setIsHuman] = useState(false) // New state for human confirmation
+  const [isHuman, setIsHuman] = useState(false)
 
   const countryCode = useParams().countryCode as string
 
@@ -129,8 +131,52 @@ export default function ProductActions({
     setIsHuman(true)
   }
 
+  const onSuccess = (result: ISuccessResult) => {
+		// This is where you should perform frontend actions once a user has been verified, such as redirecting to a new page
+		window.alert("Successfully verified with World ID! Your nullifier hash is: " + result.nullifier_hash);
+	};
+
+	const handleProof = async (result: ISuccessResult) => {
+		console.log("Proof received from IDKit:\n", JSON.stringify(result)); // Log the proof from IDKit to the console for visibility
+		const reqBody = {
+			merkle_root: result.merkle_root,
+			nullifier_hash: result.nullifier_hash,
+			proof: result.proof,
+			verification_level: result.verification_level,
+			action: process.env.NEXT_PUBLIC_WLD_ACTION,
+			signal: "",
+		};
+		console.log("Sending proof to backend for verification:\n", JSON.stringify(reqBody)) // Log the proof being sent to our backend for visibility
+		const res: Response = await fetch("https://widcloud-j3u1hxm0l-nadar.vercel.app/api/verify", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(reqBody),
+		})
+		const data: VerifyReply = await res.json()
+		if (res.status == 200) {
+			console.log("Successful response from backend:\n", data); // Log the response from our backend for visibility
+		} else {
+			throw new Error(`Error code ${res.status} (${data.code}): ${data.detail}` ?? "Unknown error."); // Throw an error if verification fails
+		}
+	};
+
   return (
     <>
+<IDKitWidget
+					action="proof-of-humanity"
+					app_id="app_c7e5d4b63c67526e8d1b437b245aae86"
+					onSuccess={onSuccess}
+					handleVerify={handleProof}
+					verification_level={VerificationLevel.Orb} // Change this to VerificationLevel.Device to accept Orb- and Device-verified users
+				>
+					{({ open }) =>
+						<button className="border border-black rounded-md" onClick={open}>
+							<div className="mx-3 my-1">Verify with World ID</div>
+						</button>
+					}
+				</IDKitWidget>
       <div className="flex flex-col gap-y-2" ref={actionsRef}>
         <div>
           {product.variants.length > 1 && (
