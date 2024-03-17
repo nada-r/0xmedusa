@@ -154,12 +154,6 @@ export default function ProductActions({
 			},
 			body: JSON.stringify(reqBody),
 		})
-		const data: VerifyReply = await res.json()
-		if (res.status == 200) {
-			console.log("Successful response from backend:\n", data); // Log the response from our backend for visibility
-		} else {
-			throw new Error(`Error code ${res.status} (${data.code}): ${data.detail}` ?? "Unknown error."); // Throw an error if verification fails
-		}
 	};
 
   return (
